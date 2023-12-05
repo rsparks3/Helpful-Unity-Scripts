@@ -6,7 +6,7 @@ using UnityEngine.UI;
 using UnityEngine.Video;
 using UnityEngine.XR.ARFoundation;
 
-public class VideoController : MonoBehaviour
+public class ARVideoControls : MonoBehaviour
 {
     public ARTrackedImageManager imageManager;
     public CanvasGroup videoControls;
@@ -48,12 +48,10 @@ public class VideoController : MonoBehaviour
 
         if(videoPlayer.isPlaying)
         {
-            Debug.Log("Pausing!!!!");
             videoPlayer.Pause();
             GameObject.Find("Play/Pause").transform.GetChild(0).GetComponent<Image>().sprite = playSprite;
         } else
         {
-            Debug.Log("Playing now ");
             videoPlayer.Play();
             GameObject.Find("Play/Pause").transform.GetChild(0).GetComponent<Image>().sprite = pauseSprite;
         }
@@ -61,7 +59,8 @@ public class VideoController : MonoBehaviour
 
     public void FastForward(int numberOfFrames)
     {
-        for(int i=0;i<numberOfFrames;i++)
+        videoPlayer = FindObjectOfType<VideoPlayer>();
+        for (int i=0;i<numberOfFrames;i++)
         {
             videoPlayer.StepForward();
         }
@@ -69,7 +68,8 @@ public class VideoController : MonoBehaviour
 
     public void Rewind(int numberOfFrames)
     {
-        for(int i=0;i<numberOfFrames;i++)
+        videoPlayer = FindObjectOfType<VideoPlayer>();
+        for (int i=0;i<numberOfFrames;i++)
         {
             videoPlayer.time = videoPlayer.time - numberOfFrames*videoPlayer.playbackSpeed;
         }
