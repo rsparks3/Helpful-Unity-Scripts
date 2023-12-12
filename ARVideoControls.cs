@@ -9,16 +9,22 @@ using UnityEngine.XR.ARFoundation;
 public class ARVideoControls : MonoBehaviour
 {
     public ARTrackedImageManager imageManager;
+    public ARSession aRSession;
     public CanvasGroup videoControls;
     private VideoPlayer videoPlayer;
 
     private bool videoControlsFadeIn = false;
+    private bool videoControlsFadeOut = false;
+    private bool videoMuted = false;
     public float fadeSpeed;
-    public Sprite pauseSprite, playSprite;
+    public int fastForwardFrames, rewindFrames;
+    public Sprite pauseSprite, playSprite, muteSprite, unmuteSprite;
+    public Button playPauseButton, fastForwardButton, rewindButton, clearImagesButton, muteButton;
 
     private void Awake()
     {
-        
+        videoControls.alpha = 0;
+        videoControls.interactable = false;
     }
 
     // Bind the ImageChanged function to the trackedImagesChanged function called by ARTrackedImageManager
@@ -27,6 +33,7 @@ public class ARVideoControls : MonoBehaviour
     private void OnEnable()
     {
         imageManager.trackedImagesChanged += ImageChanged;
+        playPauseButton.onClick.AddListener(PlayPause);
     }
 
     private void OnDisable()
@@ -39,6 +46,9 @@ public class ARVideoControls : MonoBehaviour
         if(videoControlsFadeIn)
         {
             VideoControlsFadeIn();
+        } else if (videoControlsFadeOut)
+        {
+            VideoControlsFadeOut();
         }
     }
 
@@ -46,14 +56,18 @@ public class ARVideoControls : MonoBehaviour
     {
         videoPlayer = FindObjectOfType<VideoPlayer>();
 
-        if(videoPlayer.isPlaying)
+        if (playSprite != null && pauseSprite != null)
         {
-            videoPlayer.Pause();
-            GameObject.Find("Play/Pause").transform.GetChild(0).GetComponent<Image>().sprite = playSprite;
-        } else
-        {
-            videoPlayer.Play();
-            GameObject.Find("Play/Pause").transform.GetChild(0).GetComponent<Image>().sprite = pauseSprite;
+            if (videoPlayer.isPlaying)
+            {
+                videoPlayer.Pause();
+                playPauseButton.transform.GetChild(0).GetComponent<Image>().sprite = playSprite;
+            }
+            else
+            {
+                videoPlayer.Play();
+                playPauseButton.transform.GetChild(0).GetComponent<Image>().sprite = pauseSprite;
+            }
         }
     }
 
@@ -69,9 +83,26 @@ public class ARVideoControls : MonoBehaviour
     public void Rewind(int numberOfFrames)
     {
         videoPlayer = FindObjectOfType<VideoPlayer>();
-        for (int i=0;i<numberOfFrames;i++)
+        videoPlayer.time = videoPlayer.time - (numberOfFrames/videoPlayer.frameRate)*videoPlayer.playbackSpeed;
+    }
+
+    public void ClearARVideos()
+    {
+        aRSession.Reset();
+        Debug.Log("Resetting AR Session");
+    }
+
+    public void MuteARVideo()
+    {
+        videoPlayer = FindObjectOfType<VideoPlayer>();
+        videoMuted = !videoMuted;
+        videoPlayer.SetDirectAudioMute(0, videoMuted);
+        if(videoMuted)
         {
-            videoPlayer.time = videoPlayer.time - numberOfFrames*videoPlayer.playbackSpeed;
+            muteButton.transform.GetChild(0).GetComponent<Image>().sprite = unmuteSprite;
+        } else
+        {
+            muteButton.transform.GetChild(0).GetComponent<Image>().sprite = muteSprite;
         }
     }
 
@@ -83,7 +114,8 @@ public class ARVideoControls : MonoBehaviour
             Debug.Log("Turning on video controls");
             //videoControls.SetActive(true);
             videoControlsFadeIn = true;
-            GameObject.Find("Play/Pause").transform.GetChild(0).GetComponent<Image>().sprite = pauseSprite;
+            videoControls.interactable = true;
+            playPauseButton.transform.GetChild(0).GetComponent<Image>().sprite = pauseSprite;
         }
         if(eventArgs.removed.Count > 0)
         {
@@ -102,8 +134,49 @@ public class ARVideoControls : MonoBehaviour
             videoControls.alpha += Time.deltaTime * fadeSpeed;
             if(videoControls.alpha >= 1)
             {
+                videoControls.alpha = 1;
                 videoControlsFadeIn = false;
             }
         }
     }
+
+    private void VideoControlsFadeOut()
+    {
+        if (videoControls.alpha > 0)
+        {
+            videoControls.interactable = false;
+            videoControls.alpha -= Time.deltaTime * fadeSpeed;
+            if (videoControls.alpha <=0)
+            {
+                videoControls.alpha = 0;
+                videoControlsFadeOut = false;
+            }
+        }
+    }
+
+    private void PlayPauseListener()
+    {
+        PlayPause();
+    }
+
+    private void FastForwardListener()
+    {
+        FastForward(fastForwardFrames);
+    }
+
+    private void RewindListener()
+    {
+        Rewind(rewindFrames);
+    }
+
+    private void ClearTrackedImageListener()
+    {
+        ClearARVideos();
+    }
+
+    private void MuteListener()
+    {
+        MuteARVideo();
+    }
+
 }
